@@ -41,6 +41,23 @@ if err := doc.Save(ctx, docxOut); err != nil {
 }
 ```
 
+### Work with binary content (MinIO, S3, etc.)
+```go
+doc, err := wordtmpl.OpenBytes(ctx, templateBytes)
+if err != nil {
+	// handle error
+}
+
+doc.Val("first_name", "Jordan")
+doc.Val("last_name", "Lee")
+
+outBytes, err := doc.SaveBytes(ctx)
+if err != nil {
+	// handle error
+}
+// you decide how to store outBytes, including filename and permissions
+```
+
 ## Options
 
 ### Customize placeholder matching

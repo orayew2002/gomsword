@@ -2,6 +2,7 @@ package docx
 
 import (
 	"archive/zip"
+	"bytes"
 	"context"
 	"encoding/xml"
 	"fmt"
@@ -43,7 +44,74 @@ func ReplaceKeys(ctx context.Context, path string, re *regexp.Regexp, values map
 
 	zw := zip.NewWriter(outFile)
 
-	for _, f := range zr.File {
+	if err := replaceKeysFromFiles(ctx, zr.File, re, values, zw); err != nil {
+		return err
+	}
+
+	if err := zw.Close(); err != nil {
+		return fmt.Errorf("finalize output: %w", err)
+	}
+	if err := outFile.Close(); err != nil {
+		return fmt.Errorf("close output: %w", err)
+	}
+	success = true
+	return nil
+}
+
+// ReplaceKeysToBytes returns a new .docx byte slice with placeholders replaced.
+func ReplaceKeysToBytes(ctx context.Context, path string, re *regexp.Regexp, values map[string]string) ([]byte, error) {
+	if path == "" {
+		return nil, fmt.Errorf("path is required")
+	}
+	if re == nil {
+		return nil, fmt.Errorf("placeholder regex must not be nil")
+	}
+
+	zr, err := zip.OpenReader(path)
+	if err != nil {
+		return nil, fmt.Errorf("open docx: %w", err)
+	}
+	defer zr.Close()
+
+	var out bytes.Buffer
+	zw := zip.NewWriter(&out)
+	if err := replaceKeysFromFiles(ctx, zr.File, re, values, zw); err != nil {
+		return nil, err
+	}
+	if err := zw.Close(); err != nil {
+		return nil, fmt.Errorf("finalize output: %w", err)
+	}
+	return out.Bytes(), nil
+}
+
+// ReplaceKeysFromBytes returns a new .docx byte slice with placeholders replaced.
+func ReplaceKeysFromBytes(ctx context.Context, data []byte, re *regexp.Regexp, values map[string]string) ([]byte, error) {
+	if len(data) == 0 {
+		return nil, fmt.Errorf("docx data is empty")
+	}
+	if re == nil {
+		return nil, fmt.Errorf("placeholder regex must not be nil")
+	}
+
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		return nil, fmt.Errorf("open docx: %w", err)
+	}
+
+	var out bytes.Buffer
+	zw := zip.NewWriter(&out)
+	if err := replaceKeysFromFiles(ctx, zr.File, re, values, zw); err != nil {
+		return nil, err
+	}
+	if err := zw.Close(); err != nil {
+		return nil, fmt.Errorf("finalize output: %w", err)
+	}
+	return out.Bytes(), nil
+}
+
+// replaceKeysFromFiles streams zip entries into a new writer while replacing placeholders.
+func replaceKeysFromFiles(ctx context.Context, files []*zip.File, re *regexp.Regexp, values map[string]string, zw *zip.Writer) error {
+	for _, f := range files {
 		if ctx != nil {
 			select {
 			case <-ctx.Done():
@@ -75,14 +143,6 @@ func ReplaceKeys(ctx context.Context, path string, re *regexp.Regexp, values map
 			return fmt.Errorf("write %s: %w", f.Name, err)
 		}
 	}
-
-	if err := zw.Close(); err != nil {
-		return fmt.Errorf("finalize output: %w", err)
-	}
-	if err := outFile.Close(); err != nil {
-		return fmt.Errorf("close output: %w", err)
-	}
-	success = true
 	return nil
 }
 

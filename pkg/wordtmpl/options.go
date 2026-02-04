@@ -28,6 +28,14 @@ type Option func(*options)
 
 // WithPlaceholderRegex overrides the placeholder regex used for matching keys.
 // Use it when your templates do not follow `{key}` syntax.
+//
+// Example:
+//
+//	re := regexp.MustCompile(`\{\{([^}]+)\}\}`)
+//	keys, err := ExtractKeys(ctx, path, WithPlaceholderRegex(re))
+//	if err != nil {
+//		// handle error
+//	}
 func WithPlaceholderRegex(re *regexp.Regexp) Option {
 	return func(o *options) {
 		if re != nil {
@@ -38,6 +46,17 @@ func WithPlaceholderRegex(re *regexp.Regexp) Option {
 
 // WithDocConverter overrides the converter used for .doc -> .docx conversion.
 // Use it to plug in a different conversion implementation.
+//
+// Example:
+//
+//	type myConverter struct{}
+//	func (myConverter) ConvertDocToDocx(ctx context.Context, path string) (string, func(), error) {
+//		// convert and return the docx path + cleanup
+//	}
+//	keys, err := ExtractKeys(ctx, path, WithDocConverter(myConverter{}))
+//	if err != nil {
+//		// handle error
+//	}
 func WithDocConverter(converter DocConverter) Option {
 	return func(o *options) {
 		if converter != nil {

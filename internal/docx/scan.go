@@ -2,6 +2,7 @@ package docx
 
 import (
 	"archive/zip"
+	"bytes"
 	"context"
 	"encoding/xml"
 	"fmt"
@@ -23,8 +24,30 @@ func ExtractKeys(ctx context.Context, path string, re *regexp.Regexp) ([]string,
 	}
 	defer zr.Close()
 
+	return extractKeysFromFiles(ctx, zr.File, re)
+}
+
+// ExtractKeysFromBytes scans a .docx byte slice for placeholders and returns unique keys.
+func ExtractKeysFromBytes(ctx context.Context, data []byte, re *regexp.Regexp) ([]string, error) {
+	if len(data) == 0 {
+		return nil, fmt.Errorf("docx data is empty")
+	}
+	if re == nil {
+		return nil, fmt.Errorf("placeholder regex must not be nil")
+	}
+
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		return nil, fmt.Errorf("open docx: %w", err)
+	}
+
+	return extractKeysFromFiles(ctx, zr.File, re)
+}
+
+// extractKeysFromFiles scans word/*.xml files from an opened zip container.
+func extractKeysFromFiles(ctx context.Context, files []*zip.File, re *regexp.Regexp) ([]string, error) {
 	keys := make(map[string]struct{})
-	for _, f := range zr.File {
+	for _, f := range files {
 		if ctx != nil {
 			select {
 			case <-ctx.Done():

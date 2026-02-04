@@ -10,6 +10,14 @@ import (
 // ExtractKeys scans a Word template and returns a sorted, de-duplicated list
 // of placeholder keys. Call it with the template path and optional settings
 // like WithPlaceholderRegex or WithDocConverter.
+//
+// Example:
+//
+//	keys, err := ExtractKeys(ctx, "template.docx")
+//	if err != nil {
+//		// handle error
+//	}
+//	_ = keys
 func ExtractKeys(ctx context.Context, path string, opts ...Option) ([]string, error) {
 	if path == "" {
 		return nil, fmt.Errorf("path is required")

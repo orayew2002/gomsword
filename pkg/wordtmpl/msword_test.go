@@ -2,8 +2,10 @@ package wordtmpl
 
 import (
 	"archive/zip"
+	"bytes"
 	"context"
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -112,6 +114,41 @@ func TestMsWordSaveDocxAllKeys(t *testing.T) {
 	}
 }
 
+// TestMsWordSaveBytes validates the binary API for docx content.
+func TestMsWordSaveBytes(t *testing.T) {
+	ctx := context.Background()
+	tmplPath := "testdata/template.docx"
+
+	data, err := os.ReadFile(tmplPath)
+	if err != nil {
+		t.Fatalf("read template: %v", err)
+	}
+
+	doc, err := OpenBytes(ctx, data)
+	if err != nil {
+		t.Fatalf("OpenBytes failed: %v", err)
+	}
+
+	doc.Val("first_name", "Jordan")
+	doc.Val("last_name", "Lee")
+
+	out, err := doc.SaveBytes(ctx)
+	if err != nil {
+		t.Fatalf("SaveBytes failed: %v", err)
+	}
+
+	content, err := readDocxPartFromBytes(out, "word/document.xml")
+	if err != nil {
+		t.Fatalf("read output document.xml: %v", err)
+	}
+	if strings.Contains(content, "{first_name}") || strings.Contains(content, "{last_name}") {
+		t.Fatalf("placeholders were not replaced in output")
+	}
+	if !strings.Contains(content, "Jordan") || !strings.Contains(content, "Lee") {
+		t.Fatalf("expected replacement text not found in output")
+	}
+}
+
 // readDocxPart reads a named XML file from a .docx zip container.
 func readDocxPart(path, name string) (string, error) {
 	zr, err := zip.OpenReader(path)
@@ -134,6 +171,30 @@ func readDocxPart(path, name string) (string, error) {
 			return "", err
 		}
 		return string(data), nil
+	}
+	return "", io.EOF
+}
+
+// readDocxPartFromBytes reads a named XML file from an in-memory .docx.
+func readDocxPartFromBytes(data []byte, name string) (string, error) {
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		return "", err
+	}
+	for _, f := range zr.File {
+		if f.Name != name {
+			continue
+		}
+		rc, err := f.Open()
+		if err != nil {
+			return "", err
+		}
+		defer rc.Close()
+		content, err := io.ReadAll(rc)
+		if err != nil {
+			return "", err
+		}
+		return string(content), nil
 	}
 	return "", io.EOF
 }
