@@ -25,6 +25,15 @@ if err != nil {
 // keys is sorted and de-duplicated: ["date", "name", ...]
 ```
 
+### Extract keys from bytes
+```go
+keys, err := wordtmpl.ExtractKeysFromBytes(ctx, data)
+if err != nil {
+	// handle error
+}
+// keys is sorted and de-duplicated: ["date", "name", ...]
+```
+
 ### Fill and save a new document
 ```go
 doc, err := wordtmpl.Open(ctx, "/path/to/template.docx")
