@@ -10,6 +10,7 @@ import (
 	"strings"
 )
 
+// ConvertDocToDocx converts a legacy .doc file to .docx using LibreOffice.
 func ConvertDocToDocx(ctx context.Context, path string) (string, func(), error) {
 	if _, err := exec.LookPath("soffice"); err != nil {
 		return "", func() {}, fmt.Errorf("libreoffice (soffice) not found in PATH: %w", err)

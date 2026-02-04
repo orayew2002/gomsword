@@ -8,6 +8,7 @@ import (
 	"github.com/orayew2002/gomsword/pkg/wordtmpl"
 )
 
+// main is the CLI entry point for printing extracted keys.
 func main() {
 	if len(os.Args) != 2 {
 		fmt.Fprintln(os.Stderr, "usage: wordkeys <file.docx|file.doc>")

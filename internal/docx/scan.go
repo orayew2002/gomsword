@@ -11,6 +11,7 @@ import (
 	"strings"
 )
 
+// ExtractKeys scans Word XML parts for placeholders and returns unique keys.
 func ExtractKeys(ctx context.Context, path string, re *regexp.Regexp) ([]string, error) {
 	if re == nil {
 		return nil, fmt.Errorf("placeholder regex must not be nil")
@@ -70,6 +71,7 @@ func ExtractKeys(ctx context.Context, path string, re *regexp.Regexp) ([]string,
 	return out, nil
 }
 
+// extractTextFromWordXML reads text runs from Word XML into a plain string.
 func extractTextFromWordXML(r io.Reader) (string, error) {
 	dec := xml.NewDecoder(r)
 	var b strings.Builder
@@ -111,6 +113,7 @@ func extractTextFromWordXML(r io.Reader) (string, error) {
 	return b.String(), nil
 }
 
+// isTextElement reports whether an XML element contains visible text.
 func isTextElement(local string) bool {
 	switch local {
 	case "t", "deltext", "instrtext":
@@ -120,6 +123,7 @@ func isTextElement(local string) bool {
 	}
 }
 
+// isBoundaryElement reports elements that should insert a newline boundary.
 func isBoundaryElement(local string) bool {
 	switch local {
 	case "p", "tr", "tc", "tbl", "br", "cr":
@@ -129,6 +133,7 @@ func isBoundaryElement(local string) bool {
 	}
 }
 
+// isTabElement reports elements that should insert a tab character.
 func isTabElement(local string) bool {
 	switch local {
 	case "tab":
